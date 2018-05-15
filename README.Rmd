@@ -1,0 +1,139 @@
+---
+title: "R Notebook for calve hutches experiment"
+output:
+  html_document:
+    df_print: github_document
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook for Raf Van De Mierop his master thesis on switching the direction of calve hutches. 
+
+# Data import
+
+```{r}
+path <- "./Data.csv"
+df.calves <- read.csv2(path)
+summary(df.calves)
+```
+
+You can already clearly see that some of the variables are obsolete, all are females, so that factor is useless
+
+Some transformations are needed
+
+```{r}
+df.calves$HUTCH <- as.factor(df.calves$HUTCH)
+df.calves$SAMPLE <- as.factor(df.calves$SAMPLE)
+```
+
+
+# Data exploration
+
+We next need to explore our data of interest visually, namely both CFU samples.
+
+```{r}
+hist(df.calves$CORR_SAMPLE,
+     main = "Histogram for samples",
+     xlab = "CFU")
+```
+
+So far it looks like the data is normally distributed when looking at the CFU.
+
+# Influencers of the CFU
+
+NEXT, let's take a look whether the CFU is influenced by some of the measures taken while sampling. For example age of the calve.
+
+## Model building
+
+A [generalised linear model](https://en.wikipedia.org/wiki/Generalized_linear_model)  is constructed with HUTCH as random effect.
+
+First the baseline model is build, and next [univariate models](https://en.wikipedia.org/wiki/Univariate) are constructed for each of the variables.
+
+```{r, echo=FALSE}
+if (!require("lme4")) {
+  install.packages("lme4", dependencies = TRUE)
+  library(lme4)
+}
+if (!require("lmerTest")) {
+  install.packages("lmerTest", dependencies = TRUE)
+  library(lmerTest)
+}
+if (!require("knitr")) {
+  install.packages("knitr", dependencies = TRUE)
+  library(knitr)
+}
+summary(baseline <- lmer(CFU~ 1 +  (1|HUTCH), 
+                        df.calves))
+```
+
+This is the baseline model which can be subsequently used when adding explanatory variables.
+
+### AGE
+
+```{r}
+plot(df.calves$CFU, df.calves$AGE)
+summary(glm1 <- lmer(CFU~ AGE +  (1|HUTCH), 
+                        df.calves))
+anova(baseline, glm1, test = "Chisq")
+```
+
+So it can be seen that age is influencing the CFU, but maybe this is due to the bedding?
+
+### BEDDING
+
+```{r}
+plot(df.calves$CFU, df.calves$BEDDING)
+summary(glm2 <- lmer(CFU~ BEDDING + (1|HUTCH), 
+                        df.calves))
+anova(baseline, glm2, test = "Chisq")
+
+```
+
+We can see that the bedding is not a significant influencer. 
+
+### SWITCH
+
+What about switching the direction of the hutch.
+
+
+```{r}
+plot(df.calves$CFU, df.calves$SWITCH)
+summary(glm3 <- lmer(CFU~ SWITCH + (1|HUTCH), 
+                        df.calves))
+anova(baseline, glm3, test = "Chisq")
+```
+
+
+
+And a tendency for an effect of switching the direction of the hutch.
+
+## Final model
+
+Lets build the final model by adding an interaction between both
+```{r}
+summary(glm4 <- lmer(CFU~ SWITCH * AGE + (1|HUTCH), 
+                        df.calves))
+anova(baseline, glm4, test = "Chisq")
+```
+
+Let's see if we can visualize this effect a bit more niecely.
+
+### Final model plots
+
+```{r}
+if (!require("effects")) {
+  install.packages("effects", dependencies = TRUE)
+  library(effects)
+}
+if (!require("lsmeans")) {
+  install.packages("lsmeans", dependencies = TRUE)
+  library(lsmeans)
+}
+plot(effect("SWITCH:AGE", 
+            glm4, 
+            #xlevels=list(CALC_ARRIVAL=900:2000), 
+            multiline=TRUE),
+     main = "Interaction between switching and age",
+     xlab = "Age",
+     ylab = "CFU")
+```
+```
+

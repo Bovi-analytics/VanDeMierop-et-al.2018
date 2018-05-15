@@ -1,0 +1,2 @@
+"0","data$HUTCH <- as.factor(data$HUTCH)"
+"0","data$SAMPLE <- as.factor(data$SAMPLE)"
