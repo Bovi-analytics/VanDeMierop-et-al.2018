@@ -2,7 +2,7 @@
 title: "R Notebook for calve hutches experiment"
 output:
   html_document:
-    df_print: github_document
+    df_print: paged
 ---
 
 This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook for Raf Van De Mierop his master thesis on switching the direction of calve hutches. 
